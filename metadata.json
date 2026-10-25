@@ -1,0 +1,6 @@
+{
+  "name": "DwellSpot",
+  "description": "Location-aware travel discovery app detecting dwell time in new places to highlight top nearby POIs across enjoyment, worship, dining, and culture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
