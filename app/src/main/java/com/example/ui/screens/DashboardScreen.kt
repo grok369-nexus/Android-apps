@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -139,29 +140,28 @@ fun DashboardScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { viewModel.selectCategory(null) },
-                        label = { Text("Everything") }
-                    )
-                    FilterChip(
-                        selected = selectedCategory == PoiCategory.FOOD,
-                        onClick = { viewModel.selectCategory(PoiCategory.FOOD) },
-                        label = { Text("Food") }
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = selectedCategory == PoiCategory.ENJOYMENT,
-                        onClick = { viewModel.selectCategory(PoiCategory.ENJOYMENT) },
-                        label = { Text("Explore") }
-                    )
-                    FilterChip(
-                        selected = selectedCategory == PoiCategory.OTHER,
-                        onClick = { viewModel.selectCategory(PoiCategory.OTHER) },
-                        label = { Text("More places") }
-                    )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(end = 4.dp)
+                ) {
+                    item {
+                        FilterChip(
+                            selected = selectedCategory == null,
+                            onClick = { viewModel.selectCategory(null) },
+                            label = { Text("Everything") }
+                        )
+                    }
+                    items(PoiCategory.entries) { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = {
+                                viewModel.selectCategory(
+                                    if (selectedCategory == category) null else category
+                                )
+                            },
+                            label = { Text(category.displayName) }
+                        )
+                    }
                 }
             }
         }
