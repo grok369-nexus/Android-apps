@@ -2,29 +2,29 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand palette: Modern Travel Explorer (Deep Navy + Cyan Accent + Emerald + Coral)
-val DeepNavy = Color(0xFF0A0F1D)
-val SlateNavy = Color(0xFF1E293B)
-val LightSlate = Color(0xFF334155)
+// DwellSpot: warm, welcoming colours inspired by nature and travel.
+val DeepNavy = Color(0xFF26352D)
+val SlateNavy = Color(0xFF394A40)
+val LightSlate = Color(0xFF53675A)
 
-val CyanAccent = Color(0xFF06B6D4)
-val CyanAccentLight = Color(0xFF67E8F9)
-val CyanAccentDark = Color(0xFF0891B2)
+val CyanAccent = Color(0xFF547A60)
+val CyanAccentLight = Color(0xFFA9C2A7)
+val CyanAccentDark = Color(0xFF3E624B)
 
-val EmeraldEnjoyment = Color(0xFF10B981)
-val PurpleWorship = Color(0xFF8B5CF6)
-val AmberDining = Color(0xFFF59E0B)
-val RoseLandmarks = Color(0xFFF43F5E)
+val EmeraldEnjoyment = Color(0xFF63866A)
+val PurpleWorship = Color(0xFF8B7898)
+val AmberDining = Color(0xFFC18A4B)
+val RoseLandmarks = Color(0xFFC77D68)
 
-val BackgroundDark = Color(0xFF090D16)
-val SurfaceDark = Color(0xFF131B2E)
-val SurfaceVariantDark = Color(0xFF1E293B)
+val BackgroundDark = Color(0xFF1D2822)
+val SurfaceDark = Color(0xFF27342C)
+val SurfaceVariantDark = Color(0xFF344238)
 
-val BackgroundLight = Color(0xFFF8FAFC)
-val SurfaceLight = Color(0xFFFFFFFF)
-val SurfaceVariantLight = Color(0xFFE2E8F0)
+val BackgroundLight = Color(0xFFFAF7F0)
+val SurfaceLight = Color(0xFFFFFDF8)
+val SurfaceVariantLight = Color(0xFFF0EADF)
 
-val TextPrimaryDark = Color(0xFFF1F5F9)
-val TextSecondaryDark = Color(0xFF94A3B8)
-val TextPrimaryLight = Color(0xFF0F172A)
-val TextSecondaryLight = Color(0xFF64748B)
+val TextPrimaryDark = Color(0xFFF5F0E7)
+val TextSecondaryDark = Color(0xFFB8C0B5)
+val TextPrimaryLight = Color(0xFF303A32)
+val TextSecondaryLight = Color(0xFF73796F)
