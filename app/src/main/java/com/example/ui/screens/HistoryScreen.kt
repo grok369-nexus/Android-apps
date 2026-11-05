@@ -391,26 +391,11 @@ fun FavoritePoiCard(
                 fontWeight = FontWeight.Bold
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = favorite.subType,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(text = " • ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = AmberDining,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = String.format(Locale.US, "%.1f", favorite.rating),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Text(
+                text = favorite.subType,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (favorite.address.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
