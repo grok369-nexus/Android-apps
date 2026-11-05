@@ -85,7 +85,7 @@ fun PoiExplorerScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "Nearby Points of Interest",
+                text = "Explore nearby",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -167,7 +167,7 @@ fun PoiExplorerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = CyanAccent)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Fetching local places via OpenStreetMap Overpass API...", style = MaterialTheme.typography.bodyMedium)
+                    Text("Finding places near you...", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         } else if (pois.isEmpty()) {
@@ -313,33 +313,12 @@ fun PoiCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = poi.subType,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = " • ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = AmberDining,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = String.format(Locale.US, "%.1f", poi.rating),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            Text(
+                text = poi.subType,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
 
             if (poi.address.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
