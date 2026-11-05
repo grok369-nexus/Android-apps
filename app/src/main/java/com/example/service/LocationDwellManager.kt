@@ -79,7 +79,14 @@ class LocationDwellManager private constructor(private val appContext: Context) 
 
     fun startTracking() {
         if (_engineState.value.isTracking) return
-        _engineState.value = _engineState.value.copy(isTracking = true)
+        dwellStartTimeMs = System.currentTimeMillis()
+        isTriggeredForCurrentAnchor = false
+        _engineState.value = _engineState.value.copy(
+            isTracking = true,
+            isDwelling = false,
+            currentDwellSeconds = 0,
+            isDwellTriggered = false
+        )
         startDwellTicker()
         if (!_engineState.value.isMockMode) {
             requestLocationUpdates()
@@ -275,7 +282,8 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                     currentDwellSeconds = 0,
                     isDwellTriggered = false,
                     isSimulated = isSimulated,
-                    gpsStatusMessage = if (isSimulated) "Preview location" else "Location found"
+                    gpsStatusMessage = if (isSimulated) "Preview location" else "Location found",
+                    isLoadingPois = true
                 )
                 val pois = poiRepository.fetchNearbyPois(lat, lng, 1500, resolvedName)
                 _engineState.value = _engineState.value.copy(pois = pois, isLoadingPois = false)
@@ -304,7 +312,8 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                     currentDwellSeconds = 0,
                     isDwellTriggered = false,
                     isSimulated = isSimulated,
-                    gpsStatusMessage = if (isSimulated) "Preview location changed" else "New area found"
+                    gpsStatusMessage = if (isSimulated) "Preview location changed" else "New area found",
+                    isLoadingPois = true
                 )
                 val pois = poiRepository.fetchNearbyPois(lat, lng, 1500, resolvedName)
                 _engineState.value = _engineState.value.copy(pois = pois, isLoadingPois = false)
