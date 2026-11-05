@@ -20,9 +20,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class AppScreen(val label: String, val testTag: String) {
-    DASHBOARD("Radar", "nav_dashboard"),
-    POIS("Places", "nav_pois"),
-    HISTORY("History", "nav_history"),
+    DASHBOARD("Discover", "nav_dashboard"),
+    POIS("Nearby places", "nav_pois"),
+    HISTORY("My Places", "nav_history"),
     SETTINGS("Settings", "nav_settings"),
     BLUEPRINT("Blueprint", "nav_blueprint")
 }
@@ -112,9 +112,22 @@ class DwellViewModel(application: Application) : AndroidViewModel(application) {
      * Re-queries hardware FusedLocationProviderClient for live GPS
      */
     fun refreshLiveGps(context: Context) {
+        refreshCurrentLocation(context)
+    }
+
+    fun refreshCurrentLocation(context: Context) {
         dwellManager.setMockMode(false)
         dwellManager.refreshLiveLocation()
-        DwellTrackingService.start(context)
+    }
+
+    fun setAutomaticDiscovery(context: Context, enabled: Boolean) {
+        settingsRepo.setAutomaticDiscovery(enabled)
+        if (enabled) {
+            DwellTrackingService.start(context)
+        } else {
+            DwellTrackingService.stop(context)
+            dwellManager.stopTracking()
+        }
     }
 
     /**
