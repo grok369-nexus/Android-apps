@@ -116,6 +116,9 @@ fun MainAppContent(viewModel: DwellViewModel) {
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             viewModel.refreshCurrentLocation(context)
+            if (viewModel.settingsRepo.automaticDiscovery.value) {
+                viewModel.setAutomaticDiscovery(context, true)
+            }
         }
     }
 
