@@ -169,7 +169,6 @@ class PoiRepository {
 
             val distance = calculateDistanceMeters(lat, lon, nodeLat, nodeLon)
             val (category, subType) = classifyOsmTags(tags)
-            val rating = 4.0 + ((el.optLong("id") % 10) / 10.0)
 
             list.add(
                 PointOfInterest(
