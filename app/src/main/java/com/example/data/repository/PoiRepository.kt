@@ -103,8 +103,8 @@ class PoiRepository {
     }
 
     /**
-     * Dynamically fetch nearby points of interest around (lat, lon) with given radius in meters.
-     * Tries OpenStreetMap Overpass API first, then falls back to intelligent location-aware generator.
+     * Fetches real nearby places from OpenStreetMap.
+     * If the source is unavailable, return no results rather than inventing places.
      */
     suspend fun fetchNearbyPois(
         latitude: Double,
@@ -113,17 +113,12 @@ class PoiRepository {
         resolvedLocationName: String = ""
     ): List<PointOfInterest> = withContext(Dispatchers.IO) {
         try {
-            val osmPois = fetchFromOverpass(latitude, longitude, radiusMeters)
-            if (osmPois.isNotEmpty()) {
-                return@withContext osmPois.sortedBy { it.distanceMeters }
-            }
+            fetchFromOverpass(latitude, longitude, radiusMeters)
+                .sortedBy { it.distanceMeters }
         } catch (e: Exception) {
-            Log.w("PoiRepository", "Overpass API fetch error: ${e.message}, falling back to curated POIs")
+            Log.w("PoiRepository", "Overpass API fetch failed: ${e.message}")
+            emptyList()
         }
-
-        // Curated, dynamic generator tailored to coordinates and real locality
-        return@withContext generateCuratedPois(latitude, longitude, resolvedLocationName)
-            .sortedBy { it.distanceMeters }
     }
 
     private fun fetchFromOverpass(lat: Double, lon: Double, radius: Int): List<PointOfInterest> {
@@ -185,9 +180,9 @@ class PoiRepository {
                     latitude = nodeLat,
                     longitude = nodeLon,
                     distanceMeters = distance,
-                    rating = rating,
+                    rating = 0.0,
                     address = buildOsmAddress(tags),
-                    isOpenNow = true,
+                    isOpenNow = false,
                     summary = "Live point discovered via OpenStreetMap"
                 )
             )
