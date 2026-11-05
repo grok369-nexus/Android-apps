@@ -122,6 +122,17 @@ fun LocationWelcomeScreen(
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center
                         )
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)
+                                )
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Text("Open app settings")
+                        }
                     }
                 }
             }
