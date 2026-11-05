@@ -116,8 +116,11 @@ class DwellViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshCurrentLocation(context: Context) {
-        dwellManager.setMockMode(false)
-        dwellManager.refreshLiveLocation()
+        if (engineState.value.isMockMode) {
+            dwellManager.setMockMode(false)
+        } else {
+            dwellManager.refreshLiveLocation()
+        }
     }
 
     fun setAutomaticDiscovery(context: Context, enabled: Boolean) {
