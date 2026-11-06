@@ -3,7 +3,6 @@ package com.example.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.data.model.DwellRecord
-import com.example.data.model.PoiCategory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,11 +20,14 @@ class SettingsRepository(context: Context) {
     private val _geofenceRadius = MutableStateFlow(prefs.getInt(KEY_GEOFENCE_RADIUS, 80))
     val geofenceRadius: StateFlow<Int> = _geofenceRadius.asStateFlow()
 
-    private val _batterySaver = MutableStateFlow(prefs.getBoolean(KEY_BATTERY_SAVER, false))
+    private val _batterySaver = MutableStateFlow(prefs.getBoolean(KEY_BATTERY_SAVER, true))
     val batterySaver: StateFlow<Boolean> = _batterySaver.asStateFlow()
 
     private val _notificationSound = MutableStateFlow(prefs.getBoolean(KEY_NOTIF_SOUND, true))
     val notificationSound: StateFlow<Boolean> = _notificationSound.asStateFlow()
+
+    private val _automaticDiscovery = MutableStateFlow(prefs.getBoolean(KEY_AUTOMATIC_DISCOVERY, false))
+    val automaticDiscovery: StateFlow<Boolean> = _automaticDiscovery.asStateFlow()
 
     private val _dwellHistory = MutableStateFlow(loadDwellHistory())
     val dwellHistory: StateFlow<List<DwellRecord>> = _dwellHistory.asStateFlow()
@@ -50,6 +52,11 @@ class SettingsRepository(context: Context) {
     fun toggleNotificationSound(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_NOTIF_SOUND, enabled).apply()
         _notificationSound.value = enabled
+    }
+
+    fun setAutomaticDiscovery(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUTOMATIC_DISCOVERY, enabled).apply()
+        _automaticDiscovery.value = enabled
     }
 
     fun addDwellRecord(record: DwellRecord) {
@@ -114,6 +121,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_GEOFENCE_RADIUS = "pref_geofence_radius"
         private const val KEY_BATTERY_SAVER = "pref_battery_saver"
         private const val KEY_NOTIF_SOUND = "pref_notif_sound"
+        private const val KEY_AUTOMATIC_DISCOVERY = "pref_automatic_discovery"
         private const val KEY_DWELL_HISTORY = "pref_dwell_history"
     }
 }

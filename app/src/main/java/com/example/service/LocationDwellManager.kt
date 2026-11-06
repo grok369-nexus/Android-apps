@@ -28,22 +28,22 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 data class DwellEngineState(
-    val isTracking: Boolean = true, // Auto-start live tracking
+    val isTracking: Boolean = false,
     val isDwelling: Boolean = false,
     val currentDwellSeconds: Int = 0,
     val thresholdSeconds: Int = 60,
     val geofenceRadiusMeters: Int = 80,
-    val latitude: Double = 0.3676, // Default baseline to Kawempe, Kampala, Uganda
-    val longitude: Double = 32.5562,
-    val locationName: String = "Kawempe, Kampala, Uganda",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val locationName: String = "Your area",
     val distanceToAnchorMeters: Int = 0,
     val isDwellTriggered: Boolean = false,
     val lastTriggeredTimeMillis: Long = 0L,
     val pois: List<PointOfInterest> = emptyList(),
     val isLoadingPois: Boolean = false,
     val isSimulated: Boolean = false,
-    val isMockMode: Boolean = false, // LIVE GPS IS DEFAULT (Not assumed or mock)
-    val gpsStatusMessage: String = "Connecting to Live GPS..."
+    val isMockMode: Boolean = false,
+    val gpsStatusMessage: String = "Location not checked yet"
 )
 
 class LocationDwellManager private constructor(private val appContext: Context) {
@@ -61,45 +61,32 @@ class LocationDwellManager private constructor(private val appContext: Context) 
     private val _engineState = MutableStateFlow(DwellEngineState())
     val engineState: StateFlow<DwellEngineState> = _engineState.asStateFlow()
 
-    private var anchorLat: Double? = 0.3676
-    private var anchorLng: Double? = 32.5562
+    private var anchorLat: Double? = null
+    private var anchorLng: Double? = null
     private var dwellStartTimeMs: Long = System.currentTimeMillis()
     private var isTriggeredForCurrentAnchor: Boolean = false
     private var tickerJob: Job? = null
     private var locationCallback: LocationCallback? = null
 
     init {
-        val currentThreshold = settingsRepository.dwellThreshold.value
-        val currentRadius = settingsRepository.geofenceRadius.value
         _engineState.value = _engineState.value.copy(
-            thresholdSeconds = currentThreshold,
-            geofenceRadiusMeters = currentRadius
+            thresholdSeconds = settingsRepository.dwellThreshold.value,
+            geofenceRadiusMeters = settingsRepository.geofenceRadius.value
         )
-
-        // Start live tracking immediately
-        startDwellTicker()
-        requestLocationUpdates()
-        refreshLiveLocation()
-
-        // Fetch initial POIs around baseline
-        scope.launch {
-            _engineState.value = _engineState.value.copy(isLoadingPois = true)
-            val initialPois = poiRepository.fetchNearbyPois(
-                0.3676,
-                32.5562,
-                1500,
-                "Kawempe, Kampala, Uganda"
-            )
-            _engineState.value = _engineState.value.copy(
-                pois = initialPois,
-                isLoadingPois = false
-            )
-        }
+        // Location is requested only after permission is granted.
+        // Background discovery starts only after the user opts in.
     }
 
     fun startTracking() {
         if (_engineState.value.isTracking) return
-        _engineState.value = _engineState.value.copy(isTracking = true)
+        dwellStartTimeMs = System.currentTimeMillis()
+        isTriggeredForCurrentAnchor = false
+        _engineState.value = _engineState.value.copy(
+            isTracking = true,
+            isDwelling = false,
+            currentDwellSeconds = 0,
+            isDwellTriggered = false
+        )
         startDwellTicker()
         if (!_engineState.value.isMockMode) {
             requestLocationUpdates()
@@ -112,93 +99,70 @@ class LocationDwellManager private constructor(private val appContext: Context) 
             isTracking = false,
             isDwelling = false,
             currentDwellSeconds = 0,
-            gpsStatusMessage = "Tracking Paused"
+            gpsStatusMessage = "Automatic discovery is paused"
         )
         tickerJob?.cancel()
         tickerJob = null
         stopLocationUpdates()
     }
 
-    /**
-     * Actively queries Android FusedLocationProviderClient for immediate real GPS fix.
-     */
+    /** Gets a one-time location fix for foreground discovery without starting background tracking. */
     @SuppressLint("MissingPermission")
     fun refreshLiveLocation() {
         if (_engineState.value.isMockMode) return
 
         try {
-            _engineState.value = _engineState.value.copy(gpsStatusMessage = "Acquiring satellite lock...")
-
-            // 1. Try last known location first for immediate responsiveness
+            _engineState.value = _engineState.value.copy(gpsStatusMessage = "Finding your location...")
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 if (loc != null && !_engineState.value.isMockMode) {
                     onNewLocation(loc.latitude, loc.longitude, isSimulated = false)
                 }
             }
-
-            // 2. Request fresh high-accuracy current location fix
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener { loc ->
                     if (loc != null && !_engineState.value.isMockMode) {
                         onNewLocation(loc.latitude, loc.longitude, isSimulated = false)
                     } else {
                         _engineState.value = _engineState.value.copy(
-                            gpsStatusMessage = "Live GPS Active (Waiting for motion)"
+                            gpsStatusMessage = "Location is unavailable. Try again."
                         )
                     }
                 }
                 .addOnFailureListener { e ->
                     Log.w("LocationDwellManager", "Failed to get current location: ${e.message}")
                     _engineState.value = _engineState.value.copy(
-                        gpsStatusMessage = "GPS Signal Pending"
+                        gpsStatusMessage = "Couldn't find your location. Try again."
                     )
                 }
         } catch (e: SecurityException) {
-            Log.w("LocationDwellManager", "Permission missing for location refresh: ${e.message}")
+            Log.w("LocationDwellManager", "Location permission missing: ${e.message}")
             _engineState.value = _engineState.value.copy(
-                gpsStatusMessage = "Location Permission Needed"
+                gpsStatusMessage = "Location permission is needed"
             )
         }
     }
 
-    /**
-     * Toggles Mock Mode. When disabled (default), binds to real GPS hardware.
-     */
     fun setMockMode(enabled: Boolean) {
         _engineState.value = _engineState.value.copy(
             isMockMode = enabled,
             isSimulated = enabled,
-            gpsStatusMessage = if (enabled) "Developer Mock GPS Active" else "Live GPS Active"
+            gpsStatusMessage = if (enabled) "Preview location active" else "Finding your location..."
         )
         if (enabled) {
             stopLocationUpdates()
         } else {
-            requestLocationUpdates()
             refreshLiveLocation()
+            if (_engineState.value.isTracking) requestLocationUpdates()
         }
     }
 
-    /**
-     * Jump directly to Kawempe, Kampala, Uganda coordinates.
-     */
     fun jumpToKawempeUganda() {
-        onNewLocation(0.3676, 32.5562, "Kawempe, Kampala, Uganda", isSimulated = false)
-        if (!_engineState.value.isTracking) {
-            startTracking()
-        }
+        onNewLocation(0.3676, 32.5562, "Kawempe, Kampala, Uganda", isSimulated = true)
     }
 
-    /**
-     * Manually injects custom Latitude and Longitude coordinates.
-     */
-    fun injectMockLocation(lat: Double, lng: Double, locationName: String = "Custom Point") {
-        if (!_engineState.value.isMockMode) {
-            setMockMode(true)
-        }
+    fun injectMockLocation(lat: Double, lng: Double, locationName: String = "Preview location") {
+        if (!_engineState.value.isMockMode) setMockMode(true)
         onNewLocation(lat, lng, locationName, isSimulated = true)
-        if (!_engineState.value.isTracking) {
-            startTracking()
-        }
     }
 
     fun nudgeLocationWithinGeofence() {
@@ -214,9 +178,7 @@ class LocationDwellManager private constructor(private val appContext: Context) 
     }
 
     fun forceTriggerDwellNow() {
-        if (!_engineState.value.isTracking) {
-            startTracking()
-        }
+        if (!_engineState.value.isTracking) startTracking()
         dwellStartTimeMs = System.currentTimeMillis() - (settingsRepository.dwellThreshold.value * 1000L)
         onDwellThresholdReached()
     }
@@ -233,7 +195,6 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                         currentDwellSeconds = elapsedSeconds,
                         isDwelling = true
                     )
-
                     if (elapsedSeconds >= threshold && !isTriggeredForCurrentAnchor) {
                         onDwellThresholdReached()
                     }
@@ -259,10 +220,8 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                 state.locationName
             )
             _engineState.value = _engineState.value.copy(pois = pois, isLoadingPois = false)
-
             val topSummary = pois.take(3).joinToString(" • ") { it.name }
 
-            // 1. Save to Room Database
             travelHistoryRepository.recordVisitedLocation(
                 locationName = state.locationName,
                 latitude = state.latitude,
@@ -272,7 +231,6 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                 topPoiSummary = topSummary
             )
 
-            // 2. Keep SharedPreferences backup
             val record = DwellRecord(
                 id = UUID.randomUUID().toString(),
                 locationName = state.locationName,
@@ -285,7 +243,6 @@ class LocationDwellManager private constructor(private val appContext: Context) 
             )
             settingsRepository.addDwellRecord(record)
 
-            // 3. Trigger Rich Push Notification
             NotificationHelper.showDwellDiscoveryNotification(
                 context = appContext,
                 locationName = state.locationName,
@@ -305,7 +262,6 @@ class LocationDwellManager private constructor(private val appContext: Context) 
         val currentAnchorLng = anchorLng
         val radius = settingsRepository.geofenceRadius.value
 
-        // Resolve real address asynchronously if not explicitly provided
         scope.launch {
             val resolvedName = if (!locationName.isNullOrBlank() && !locationName.contains("GPS Location")) {
                 locationName
@@ -314,7 +270,6 @@ class LocationDwellManager private constructor(private val appContext: Context) 
             }
 
             if (currentAnchorLat == null || currentAnchorLng == null) {
-                // First anchor fix
                 anchorLat = lat
                 anchorLng = lng
                 dwellStartTimeMs = System.currentTimeMillis()
@@ -327,28 +282,24 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                     currentDwellSeconds = 0,
                     isDwellTriggered = false,
                     isSimulated = isSimulated,
-                    gpsStatusMessage = if (isSimulated) "Mock Location Set" else "Live GPS Locked"
+                    gpsStatusMessage = if (isSimulated) "Preview location" else "Location found",
+                    isLoadingPois = true
                 )
-
-                // Fetch real POIs around this new location immediately
                 val pois = poiRepository.fetchNearbyPois(lat, lng, 1500, resolvedName)
-                _engineState.value = _engineState.value.copy(pois = pois)
+                _engineState.value = _engineState.value.copy(pois = pois, isLoadingPois = false)
                 return@launch
             }
 
             val distance = poiRepository.calculateDistanceMeters(currentAnchorLat, currentAnchorLng, lat, lng)
-
             if (distance <= radius) {
-                // User is still within stationary geofence
                 _engineState.value = _engineState.value.copy(
                     latitude = lat,
                     longitude = lng,
                     locationName = resolvedName,
                     distanceToAnchorMeters = distance,
-                    gpsStatusMessage = if (isSimulated) "Mock Location Active" else "Live GPS Tracking"
+                    gpsStatusMessage = if (isSimulated) "Preview location" else "Location updated"
                 )
             } else {
-                // User departed geofence -> Reset dwell timer to new location
                 anchorLat = lat
                 anchorLng = lng
                 dwellStartTimeMs = System.currentTimeMillis()
@@ -361,12 +312,11 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                     currentDwellSeconds = 0,
                     isDwellTriggered = false,
                     isSimulated = isSimulated,
-                    gpsStatusMessage = if (isSimulated) "New Mock Spot" else "New Location Detected"
+                    gpsStatusMessage = if (isSimulated) "Preview location changed" else "New area found",
+                    isLoadingPois = true
                 )
-
-                // Fetch new POIs for newly entered area
                 val pois = poiRepository.fetchNearbyPois(lat, lng, 1500, resolvedName)
-                _engineState.value = _engineState.value.copy(pois = pois)
+                _engineState.value = _engineState.value.copy(pois = pois, isLoadingPois = false)
             }
         }
     }
@@ -374,12 +324,10 @@ class LocationDwellManager private constructor(private val appContext: Context) 
     @SuppressLint("MissingPermission")
     private fun requestLocationUpdates() {
         if (_engineState.value.isMockMode) return
-
         try {
             val isBatterySaver = settingsRepository.batterySaver.value
             val intervalMs = if (isBatterySaver) 12000L else 4000L
             val minDistance = if (isBatterySaver) 25f else 5f
-
             val locationRequest = LocationRequest.Builder(
                 if (isBatterySaver) Priority.PRIORITY_BALANCED_POWER_ACCURACY else Priority.PRIORITY_HIGH_ACCURACY,
                 intervalMs
@@ -392,16 +340,19 @@ class LocationDwellManager private constructor(private val appContext: Context) 
                     onNewLocation(last.latitude, last.longitude, isSimulated = false)
                 }
             }
-
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
                 locationCallback as LocationCallback,
                 Looper.getMainLooper()
             )
-            _engineState.value = _engineState.value.copy(gpsStatusMessage = "Listening to Live GPS...")
+            _engineState.value = _engineState.value.copy(
+                gpsStatusMessage = "Automatic discovery is active"
+            )
         } catch (e: SecurityException) {
             Log.w("LocationDwellManager", "Location permission not yet granted: ${e.message}")
-            _engineState.value = _engineState.value.copy(gpsStatusMessage = "Waiting for Permission")
+            _engineState.value = _engineState.value.copy(
+                gpsStatusMessage = "Location permission is needed"
+            )
         }
     }
 

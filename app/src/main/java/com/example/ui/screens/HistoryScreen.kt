@@ -97,12 +97,12 @@ fun HistoryScreen(
         ) {
             Column {
                 Text(
-                    text = "Travel Log & Saved Places",
+                    text = "My places",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Persisted locally via Android Room Database",
+                    text = "Places you have saved and visited",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -140,7 +140,7 @@ fun HistoryScreen(
                 onClick = { selectedTabIndex = 0 },
                 text = {
                     Text(
-                        text = "Visited Arrivals (${visitedList.size})",
+                        text = "Visited (${visitedList.size})",
                         fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal
                     )
                 },
@@ -152,7 +152,7 @@ fun HistoryScreen(
                 onClick = { selectedTabIndex = 1 },
                 text = {
                     Text(
-                        text = "Favorited POIs (${favoritesList.size})",
+                        text = "Saved (${favoritesList.size})",
                         fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal
                     )
                 },
@@ -188,7 +188,7 @@ fun HistoryScreen(
             if (favoritesList.isEmpty()) {
                 EmptyStateCard(
                     title = "No Favorited Places Yet",
-                    subtitle = "Tap the bookmark icon on any point of interest in the 'Places' tab to save top restaurants, churches, parks, and landmarks to your local Room database."
+                    subtitle = "Tap the bookmark icon on any point of interest in Discover to save top restaurants, churches, parks, and landmarks to your local Room database."
                 )
             } else {
                 LazyColumn(
@@ -391,26 +391,11 @@ fun FavoritePoiCard(
                 fontWeight = FontWeight.Bold
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = favorite.subType,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(text = " • ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = AmberDining,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = String.format(Locale.US, "%.1f", favorite.rating),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Text(
+                text = favorite.subType,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (favorite.address.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
